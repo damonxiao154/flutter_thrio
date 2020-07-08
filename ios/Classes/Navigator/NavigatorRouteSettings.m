@@ -37,7 +37,7 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 @implementation NavigatorRouteSettings
-
+/// nest应该是指是否有动画
 + (instancetype)settingsWithUrl:(NSString *)url
                           index:(NSNumber *)index
                          nested:(BOOL)nested

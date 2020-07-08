@@ -40,6 +40,7 @@ NS_ASSUME_NONNULL_BEGIN
                         nibName:(NSString *_Nullable)nibName
                          bundle:(NSBundle *_Nullable)nibBundle NS_UNAVAILABLE;
 
+// 内部方法，用于刷新页面View
 - (void)surfaceUpdated:(BOOL)appeared;
 
 @property (nonatomic, copy, readonly) NSString *entrypoint;

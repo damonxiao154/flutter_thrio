@@ -46,6 +46,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @implementation NavigatorFlutterEngine
 
+/// 注册engine
 - (void)startupWithEntrypoint:(NSString *)entrypoint
                    readyBlock:(ThrioIdCallback _Nullable)block {
   if (!_engine) {
@@ -56,6 +57,7 @@ NS_ASSUME_NONNULL_BEGIN
   }
 }
 
+/// push 通过engine本身的surfaceUpdated来更新了UI
 - (void)pushViewController:(NavigatorFlutterViewController *)viewController {
   if (![_flutterViewControllers containsObject:viewController]) {
     [_flutterViewControllers addObject:viewController];
@@ -71,6 +73,7 @@ NS_ASSUME_NONNULL_BEGIN
   }
 }
 
+/// pop 通过engine本身的surfaceUpdated来更新了UI
 - (NSUInteger)popViewController:(NavigatorFlutterViewController *)viewController {
   [_flutterViewControllers removeObject:viewController];
   NavigatorVerbose(@"NavigatorFlutterEngine: enter popViewController");
@@ -87,13 +90,16 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - private methods
 
+/// 根据flutter engine本身的hash生成flutterengine
 - (void)startupFlutterWithEntrypoint:(NSString *)entrypoint {
   NSString *enginName = [NSString stringWithFormat:@"io.flutter.%lu", (unsigned long)self.hash];
   _engine = [[FlutterEngine alloc] initWithName:enginName project:nil allowHeadlessExecution:YES];
   BOOL result = NO;
   if (ThrioNavigator.isMultiEngineEnabled) {
+      // 如果多引擎，则采用entrypoint唤起engine
     result =[_engine runWithEntrypoint:entrypoint];
   } else {
+      // 单引擎，直接运行
     result = [_engine run];
   }
   if (!result) {
@@ -103,6 +109,7 @@ NS_ASSUME_NONNULL_BEGIN
   }
 }
 
+// 注册插件，采用GeneratedPluginRegistrant进行flutter engine注册
 - (void)registerPlugins {
   Class clazz = NSClassFromString(@"GeneratedPluginRegistrant");
   if (clazz) {
@@ -118,20 +125,26 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)setupChannelWithEntrypoint:(NSString *)entrypoint
                         readyBlock:(ThrioIdCallback _Nullable)block {
+    // 定义channel
   _channel = [ThrioChannel channelWithEntrypoint:entrypoint name:@"__thrio_app__"];
   
+    // 定义event和method channel
   [_channel setupEventChannel:_engine.binaryMessenger];
   [_channel setupMethodChannel:_engine.binaryMessenger];
 
+    // 定义receiveChannel 主要是event事件响应
   _receiveChannel = [[NavigatorRouteReceiveChannel alloc] initWithChannel:_channel];
   [_receiveChannel setReadyBlock:block];
   
+    // 用于event事件发送
   _sendChannel = [[NavigatorRouteSendChannel alloc] initWithChannel:_channel];
 
+    // route observer channel
   ThrioChannel *routeChannel = [ThrioChannel channelWithEntrypoint:entrypoint name:@"__thrio_route_channel__"];
   [routeChannel setupMethodChannel:_engine.binaryMessenger];
   _routeObserverChannel = [[NavigatorRouteObserverChannel alloc] initWithChannel:routeChannel];
   
+    // page observer channel
   ThrioChannel *pageChannel = [ThrioChannel channelWithEntrypoint:entrypoint name:@"__thrio_page_channel__"];
   [pageChannel setupMethodChannel:_engine.binaryMessenger];
   _pageObserverChannel = [[NavigatorPageObserverChannel alloc] initWithChannel:pageChannel];

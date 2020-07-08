@@ -72,6 +72,7 @@
   return delegate;
 }
 
+/// 添加右滑手势
 - (void)thrio_addPopGesture {
   if (![self.interactivePopGestureRecognizer.view.gestureRecognizers containsObject:self.thrio_popGestureRecognizer]) {
     [self.interactivePopGestureRecognizer.view addGestureRecognizer:self.thrio_popGestureRecognizer];
@@ -80,6 +81,7 @@
   self.interactivePopGestureRecognizer.enabled = NO;
 }
 
+/// 删除左侧手势，防止栈下面的页面响应，保证只是当前页面响应
 - (void)thrio_removePopGesture {
   if ([self.interactivePopGestureRecognizer.view.gestureRecognizers containsObject:self.thrio_popGestureRecognizer]) {
     [self.interactivePopGestureRecognizer.view removeGestureRecognizer:self.thrio_popGestureRecognizer];

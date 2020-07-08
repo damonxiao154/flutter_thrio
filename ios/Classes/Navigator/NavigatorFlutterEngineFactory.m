@@ -60,6 +60,7 @@ NS_ASSUME_NONNULL_BEGIN
   return _flutterUrls;
 }
 
+/// 根据entrypoint启动方法
 - (void)startupWithEntrypoint:(NSString *)entrypoint readyBlock:(ThrioIdCallback _Nullable)block {
   if (!ThrioNavigator.isMultiEngineEnabled) {
     entrypoint = @"";
@@ -70,6 +71,7 @@ NS_ASSUME_NONNULL_BEGIN
   } else {
     NavigatorVerbose(@"push in startupWithEntrypoint:%@", entrypoint);
     NavigatorFlutterEngine *flutterEngine = [[NavigatorFlutterEngine alloc] init];
+      /// 将entrypoint作为key，保存engine
     [self.flutterEngines setObject:flutterEngine forKey:entrypoint];
     [flutterEngine startupWithEntrypoint:entrypoint readyBlock:block];
   }

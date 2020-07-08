@@ -71,27 +71,31 @@ NS_ASSUME_NONNULL_BEGIN
        fromEntrypoint:(NSString * _Nullable)entrypoint
                result:(ThrioNumberCallback _Nullable)result
          poppedResult:(ThrioIdCallback _Nullable)poppedResult {
+    /// 记录属性
   NavigatorRouteSettings *settings = [NavigatorRouteSettings settingsWithUrl:url
                                                                        index:index
                                                                       nested:self.thrio_firstRoute != nil
                                                                       params:params];
   if (![self isKindOfClass:NavigatorFlutterViewController.class]) { // 当前页面为原生页面
-    [ThrioNavigator onCreate:settings];
+    [ThrioNavigator onCreate:settings]; // 触发创建回调
   }
-  NavigatorPageRoute *newRoute = [NavigatorPageRoute routeWithSettings:settings];
-  newRoute.fromEntrypoint = entrypoint;
-  newRoute.poppedResult = poppedResult;
+  NavigatorPageRoute *newRoute = [NavigatorPageRoute routeWithSettings:settings]; // 创建route
+  newRoute.fromEntrypoint = entrypoint; // entry point
+  newRoute.poppedResult = poppedResult; // 回退完成后的回调
   if (self.thrio_firstRoute) {
+      /// 更新route info，双向指针
     NavigatorPageRoute *lastRoute = self.thrio_lastRoute;
     lastRoute.next = newRoute;
     newRoute.prev = lastRoute;
   } else {
+      /// 设置为第一route
     self.thrio_firstRoute = newRoute;
   }
-  if ([self isKindOfClass:NavigatorFlutterViewController.class]) {
-    NSMutableDictionary *arguments = [NSMutableDictionary dictionaryWithDictionary:[settings toArguments]];
-    [arguments setObject:[NSNumber numberWithBool:animated] forKey:@"animated"];
-    NSString *entrypoint = [(NavigatorFlutterViewController*)self entrypoint];
+  if ([self isKindOfClass:NavigatorFlutterViewController.class]) {  // flutter页面
+    NSMutableDictionary *arguments = [NSMutableDictionary dictionaryWithDictionary:[settings toArguments]];// 获取settings携带参数
+    [arguments setObject:[NSNumber numberWithBool:animated] forKey:@"animated"];// 是否动画
+    NSString *entrypoint = [(NavigatorFlutterViewController*)self entrypoint];// entry点
+      /// 相应页面通知：push
     NavigatorRouteSendChannel *channel = [NavigatorFlutterEngineFactory.shared getSendChannelByEntrypoint:entrypoint];
     if (result) {
       [channel onPush:arguments result:^(id _Nullable r) {
@@ -111,7 +115,11 @@ NS_ASSUME_NONNULL_BEGIN
                  params:(id _Nullable)params {
   NavigatorPageRoute *route = [self thrio_getRouteByUrl:url index:index];
   if (route) {
+      /// 添加notification
     [route addNotify:name params:params];
+      /// Q&A 为什么限制了topVC和route？
+      /// 限制栈顶代表了当前页在栈内
+      /// thrio_lastRoute代表最上层的route，相当于通知就到了最上层页面
     if (self == self.navigationController.topViewController &&
         route == self.thrio_lastRoute) {
       [self thrio_onNotify:route];
@@ -126,6 +134,7 @@ NS_ASSUME_NONNULL_BEGIN
                  result:(ThrioBoolCallback _Nullable)result {
   NavigatorPageRoute *route = self.thrio_lastRoute;
   if (!route) {
+      // 已没有页面
     if (result) {
       result(NO);
     }
@@ -136,17 +145,20 @@ NS_ASSUME_NONNULL_BEGIN
   [arguments setObject:[NSNumber numberWithBool:animated] forKey:@"animated"];
 
   if ([self isKindOfClass:NavigatorFlutterViewController.class]) {
+      /// flutter
     NSString *entrypoint = [(NavigatorFlutterViewController*)self entrypoint];
     NavigatorRouteSendChannel *channel = [NavigatorFlutterEngineFactory.shared getSendChannelByEntrypoint:entrypoint];
     __weak typeof(self) weakself = self;
-    // 发送给需要关闭页面的引擎
+    /// 发送给需要关闭页面的引擎
     [channel onPop:arguments result:^(id _Nullable r) {
       __strong typeof(weakself) strongSelf = weakself;
+        /// 退出是否成功
       if (r && [r boolValue]) {
         if (route != strongSelf.thrio_firstRoute) {
           [strongSelf thrio_onNotify:route.prev];
         }
       }
+        /// 回调pop结果
       if (result) {
         result(r && [r boolValue]);
       }
@@ -201,6 +213,7 @@ NS_ASSUME_NONNULL_BEGIN
     return;
   }
   if ([self isKindOfClass:NavigatorFlutterViewController.class]) {
+      // Flutter
     NSMutableDictionary *arguments =
     [NSMutableDictionary dictionaryWithDictionary:[route.settings toArgumentsWithParams:nil]];
     [arguments setObject:[NSNumber numberWithBool:animated] forKey:@"animated"];
@@ -247,12 +260,15 @@ NS_ASSUME_NONNULL_BEGIN
       __strong typeof(weakself) strongSelf = weakself;
       if ([r boolValue]) {
         if (route == strongSelf.thrio_firstRoute) {
+            /// Q&A firstRoute的prev不应该是nil吗？
           strongSelf.thrio_firstRoute = route.next;
           route.prev.next = nil;
         } else if (route == strongSelf.thrio_lastRoute) {
+            /// 解除连接
           route.prev.next = nil;
           [strongSelf thrio_onNotify:route.prev];
         } else {
+            /// 解除连接
           route.prev.next = route.next;
           route.next.prev = route.prev;
         }
@@ -321,12 +337,15 @@ NS_ASSUME_NONNULL_BEGIN
   }
 }
 
+///
 - (NavigatorPageRoute * _Nullable)thrio_getRouteByUrl:(NSString *)url
                                                 index:(NSNumber * _Nullable)index {
   NavigatorPageRoute *last = self.thrio_lastRoute;
+    // 如果url是空，那说明需要拿最上层route
   if (url.length < 1) {
     return last;
   }
+    // 通过url和index确定当前需要哪个last
   do {
     if ([last.settings.url isEqualToString:url] &&
         (index == nil || [last.settings.index isEqualToNumber:index])) {
@@ -442,6 +461,7 @@ NS_ASSUME_NONNULL_BEGIN
   for (NSString *name in keys) {
     id params = [route removeNotify:name];
     if ([self isKindOfClass:NavigatorFlutterViewController.class]) {
+        /// 如果是flutter页面，则组装args，包含url和index（Pop的前一页面）
       NSDictionary *arguments = params ? @{
         @"url": route.settings.url,
         @"index": route.settings.index,
@@ -453,9 +473,10 @@ NS_ASSUME_NONNULL_BEGIN
         @"name": name,
       };
       NSString *entrypoint = [(NavigatorFlutterViewController*)self entrypoint];
-      NavigatorRouteSendChannel *channel = [NavigatorFlutterEngineFactory.shared getSendChannelByEntrypoint:entrypoint];
+      NavigatorRouteSendChannel *channel = [NavigatorFlutterEngineFactory.shared getSendChannelByEntrypoint:entrypoint];// 针对当前的engine发出channel
       [channel onNotify:arguments result:nil];
     } else {
+        /// 如果不是Flutter页面，则直接使用OC方法执行notify
       if ([self conformsToProtocol:@protocol(NavigatorPageNotifyProtocol)]) {
         [(id<NavigatorPageNotifyProtocol>)self onNotify:name params:params];
       }

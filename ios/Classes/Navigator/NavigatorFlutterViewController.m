@@ -48,6 +48,7 @@ NS_ASSUME_NONNULL_BEGIN
   FlutterEngine *engine = [NavigatorFlutterEngineFactory.shared getEngineByEntrypoint:entrypoint];
   if (engine.viewController) {
     if ([engine.viewController isKindOfClass:NavigatorFlutterViewController.class]) {
+        /// 回退当前引擎的页面
       [NavigatorFlutterEngineFactory.shared popViewController:(NavigatorFlutterViewController *)engine.viewController];
     } else {
       engine.viewController = nil;
@@ -70,6 +71,7 @@ NS_ASSUME_NONNULL_BEGIN
   self.view.backgroundColor = UIColor.whiteColor;
 }
 
+/// Q&A 这里的生命周期做个疑问？为什么需要判断isMovingToParentViewController
 - (void)viewWillAppear:(BOOL)animated {
   [super viewWillAppear:animated];
   

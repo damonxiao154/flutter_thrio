@@ -76,6 +76,7 @@ NS_ASSUME_NONNULL_BEGIN
                         poppedResult:poppedResult];
     } else {
       NSString *entrypoint = @"";
+        /// Q&A 这里的entrypoint设置为scheme开头是对的么？
       if (ThrioNavigator.isMultiEngineEnabled) {
         entrypoint = [url componentsSeparatedByString:@"/"].firstObject;
       }
@@ -84,6 +85,9 @@ NS_ASSUME_NONNULL_BEGIN
       ThrioIdCallback readyBlock = ^(id _){
         NavigatorVerbose(@"push entrypoint: %@, url:%@", entrypoint, url);
         __strong typeof(weakself) strongSelf = weakself;
+          /// Q&A 这里为什么一定要求topViewController的entrypoint和当前的entrypoint相等？
+          /// topViewController代表栈最上层页面，也就是第一个页面
+          /// entrypoint是因为要确保只能是当前engine才能使用
         if ([strongSelf.topViewController isKindOfClass:NavigatorFlutterViewController.class] &&
             [[(NavigatorFlutterViewController*)strongSelf.topViewController entrypoint] isEqualToString:entrypoint]) {
           NSNumber *index = @([strongSelf thrio_getLastIndexByUrl:url].integerValue + 1);
@@ -345,6 +349,7 @@ NS_ASSUME_NONNULL_BEGIN
   if (url.length < 1) {
     return self.topViewController;
   }
+  /// 从最上的vc开始取值
   NSEnumerator *vcs = [self.viewControllers reverseObjectEnumerator];
   for (UIViewController *vc in vcs) {
     if ([vc thrio_getRouteByUrl:url index:index]) {
@@ -579,11 +584,14 @@ NS_ASSUME_NONNULL_BEGIN
   return viewController;
 }
 
+/// 根据URL创建native vc
 - (UIViewController * _Nullable)thrio_createNativeViewControllerWithUrl:(NSString *)url params:(NSDictionary *)params {
   UIViewController *viewController;
+    /// 页面创建的map，从map中取出url
   NavigatorPageBuilder builder = [ThrioNavigator pageBuilders][url];
   if (builder) {
     viewController = builder(params);
+    /// 是否隐藏navbar
     if (viewController.thrio_hidesNavigationBar_ == nil) {
       viewController.thrio_hidesNavigationBar_ = @NO;
     }
