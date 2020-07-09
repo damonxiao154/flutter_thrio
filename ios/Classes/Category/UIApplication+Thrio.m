@@ -23,6 +23,7 @@
 
 @implementation UIApplication (Thrio)
 
+/// 找到最上层VC
 - (UIViewController *)topmostViewController {
   UIViewController *topmostViewController = self.delegate.window.rootViewController;
   while (true) {
@@ -41,6 +42,7 @@
   return topmostViewController;
 }
 
+/// 找到最上层的NavigationController
 - (UINavigationController * _Nullable)topmostNavigationController {
   UINavigationController* topmostNavigationController = nil;
   UIViewController *topmostViewController = self.delegate.window.rootViewController;

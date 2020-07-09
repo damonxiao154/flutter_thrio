@@ -24,7 +24,7 @@
 #import "ThrioNavigator+PageBuilders.h"
 
 @implementation ThrioNavigator (PageBuilders)
-
+/// FlutterPageBuilder
 + (NavigatorFlutterPageBuilder _Nullable)flutterPageBuilder {
   return objc_getAssociatedObject(self, _cmd);
 }
@@ -36,6 +36,7 @@
                            OBJC_ASSOCIATION_COPY_NONATOMIC);
 }
 
+/// page的map，封装了一个dictionary，并实现了NSFastEnumeration
 + (ThrioRegistryMap *)pageBuilders {
   id builders = objc_getAssociatedObject(self, _cmd);
   if (!builders) {

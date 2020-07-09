@@ -27,6 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @implementation ThrioNavigator (PageObservers)
 
+/// pageObservers作为一个set
 + (ThrioRegistrySet<id<NavigatorPageObserverProtocol>> *)pageObservers {
   id value = objc_getAssociatedObject(self, _cmd);
   if (!value) {
@@ -36,6 +37,7 @@ NS_ASSUME_NONNULL_BEGIN
   return value;
 }
 
+/// 实现对页面周期的监控
 + (void)onCreate:(NavigatorRouteSettings *)routeSettings {
   NavigatorVerbose(@"%@ %@.%@", NSStringFromSelector(_cmd), routeSettings.url, routeSettings.index);
   ThrioRegistrySet *pageObservers = [self.pageObservers copy];
